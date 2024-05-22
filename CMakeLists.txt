@@ -73,7 +73,7 @@ target_link_libraries(face_recognition
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/install/face_recognition_${CMAKE_SYSTEM_NAME})
 
 install(TARGETS face_recognition DESTINATION ./)
-install(TARGETS face_recognition DESTINATION ${CMAKE_INSTALL_PREFIX}/add_picture)
+install(DIRECTORY add_picture DESTINATION ./)
 
 install(DIRECTORY models/live DESTINATION ./models)
 install(DIRECTORY models/mobilefacenet DESTINATION ./models)

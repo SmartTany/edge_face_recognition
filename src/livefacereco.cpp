@@ -315,20 +315,19 @@ void add_person_funcation(Arcface & facereco){
 
             if(faces_info.size() >=1){
 
-                std::string copy_path = images_path + img_name;
-                cv::imwrite(copy_path,face_img);                             //下次重启自动取数据库里面拿数据 
-
+				std::string copy_path = images_path + '/' + person_name + ".jpg";
+				cv::imwrite(copy_path,face_img);
                 auto large_box = getLargestBboxFromBboxVec(faces_info);
                 aligned_faceimg = alignFaceImage(face_img,large_box,face_landmark_gt_matrix);
                 face_descriptor = facereco.getFeature(aligned_faceimg);
                 
                 //face_descriptors_map[person_name] = Statistics::zScore(face_descriptor);
                 face_descriptors_dict[person_name] = face_descriptor;
-                std::string local_path = addpic_path + img_name;
-                fs::remove(local_path);                                     //拷贝一张删除一张
+				
+				fs::remove(img_name);               
         }
-       }                
-        
+       }
+		                                            
 	}
 }
 
@@ -336,7 +335,7 @@ void del_person_funcation(string name){                                      //�
 
     if(name.size() != 0)
     {
-        std::string project_path = images_path + name + ".jpg";
+        std::string project_path = images_path + '/' + name + ".jpg";
         fs::remove(project_path); 
     }
 }
@@ -379,15 +378,15 @@ int MTCNNDetection()
     //ParallelVideoCapture cap("udpsrc device=/dev/video0 ! application/x-rtp, payload=96 ! rtpjitterbuffer ! rtph264depay ! avdec_h264 ! videoconvert ! appsink sync=false",cv::CAP_GSTREAMER,30); //using camera capturing
     //ParallelVideoCapture cap("/home/pi/testvideo.mp4");
 
-    //ParallelVideoCapture cap(0);    // USB 摄像头设备号    android not used ,linux please open
-    //cap.startCapture();             // 异步获取帧图像      android not used,linux please open
+    ParallelVideoCapture cap(0);    // USB 摄像头设备号    android not used ,linux please open
+    cap.startCapture();             // 异步获取帧图像      android not used,linux please open
 
-    //std::cout<<"okay!\n";
+    std::cout<<"okay!\n";
 
-    // if (!cap.isOpened()) {                               //android not used,linux please open
-    //     cerr << "cannot get image" << endl;              //android not used,linux please open
-    //     return -1;                                       //android not used,linux please open
-    // }                                                    //android not used,linux please open
+    if (!cap.isOpened()) {                               //android not used,linux please open
+        cerr << "cannot get image" << endl;              //android not used,linux please open
+        return -1;                                       //android not used,linux please open
+    }                                                    //android not used,linux please open
 
     float confidence;
     Mat frame;                 //图像帧   
@@ -398,9 +397,9 @@ int MTCNNDetection()
 
     //NV21ToMat(nv21_data, width, height, frame);           //给出nv21的数据，宽和高        linux not used,android please open
 
-    while(!frame.empty())
+    while(cap.isOpened())                                   //linux：cap.isOpened()  android：!frame.empty()
     {
-        //frame = cap.getFrame();     //得到帧图像，安卓环境需要把nv21转成BGRA格式               android not used,linux please open
+        frame = cap.getFrame();     //得到帧图像，安卓环境需要把nv21转成BGRA格式               android not used,linux please open
         if(frame.empty())
         {
             continue;
@@ -426,26 +425,21 @@ int MTCNNDetection()
             
 
             confidence = live.Detect(frame,live_face_box);        // 活体检测，不是特别精准，按照需要自行添加，不要也可以毙掉
-
+			cv::rectangle(frame, Point(large_box.x1*ratio_x, large_box.y1*ratio_y), Point(large_box.x2*ratio_x,large_box.y2*ratio_y), cv::Scalar(0, 0, 255), 2);    // 框出人脸，矩形框，左上角和右下角的坐标位置
             if(!person_name.empty() && confidence >= true_thre)                                                  // 活体人脸
             {               
                 //putText(frame, person_name, cv::Point(15, 80), cv::FONT_HERSHEY_SIMPLEX,0.75, cv::Scalar(255, 255, 0),2);                                                // 打印人名 person_name
-                cout<<person_name<<endl;
-                cv::rectangle(frame, Point(large_box.x1*ratio_x, large_box.y1*ratio_y), Point(large_box.x2*ratio_x,large_box.y2*ratio_y), cv::Scalar(0, 0, 255), 2);    // 框出人脸，矩形框，左上角和右下角的坐标位置
-                
+                cout<<person_name<<endl;                               
             }        
         }
     //NV21ToMat(nv21_data, width, height, frame);           //给出nv21的数据，宽和高        linux not used,android please open         更新数据
 
-	 //cv::imshow("test",frame);
-         //char keyvalue = cv::waitKey(1);
+		cv::imshow("test",frame);
+		char keyvalue = cv::waitKey(1);
     
-	 //if (keyvalue == 113||keyvalue == 81)
-         //    break;
+		if (keyvalue == 113||keyvalue == 81)
+            break;
      }
-    //cap.stopCapture();             // android not used,linux please open
+    cap.stopCapture();             // android not used,linux please open
     return 0;
 }
-
-
-
